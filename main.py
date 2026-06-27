@@ -58,6 +58,11 @@ def ranking():
     return render_template('ranking.html')
 
 
+@app.route('/team')
+def team():
+    return render_template('team.html')
+
+
 @app.route('/api/players', methods=['GET'])
 def api_get_players():
     """Get all players"""
@@ -84,6 +89,11 @@ def api_add_player():
     
     try:
         players = load_players()
+        
+        # Check if nickname already exists
+        if any(player['nickname'] == nickname for player in players):
+            return jsonify({'error': 'nickname already exists'}), 400
+        
         players.append({'nickname': nickname, 'tier': tier or '신튜렁', 'mt': mt})
         save_players(players)
         logger.info(f"Added player: {nickname}")
