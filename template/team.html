@@ -120,28 +120,27 @@
     }
 
     function shuffleTeams() {
-      // Get checked players
-      const checkboxes = document.querySelectorAll('.player-checkbox:checked');
-      const selectedPlayers = Array.from(checkboxes).map(checkbox => {
-        const index = parseInt(checkbox.getAttribute('data-index'));
-        return allPlayers[index];
-      });
+      // Get all players currently in both teams
+      const teamAInputs = document.querySelectorAll('#teamA .player-input');
+      const teamBInputs = document.querySelectorAll('#teamB .player-input');
+      
+      const teamAPlayers = Array.from(teamAInputs).map(input => input.value.trim()).filter(nick => nick);
+      const teamBPlayers = Array.from(teamBInputs).map(input => input.value.trim()).filter(nick => nick);
+      
+      const allTeamPlayers = [...teamAPlayers, ...teamBPlayers];
 
-      if (selectedPlayers.length < 10) {
-        alert(`팀 배치를 위해 최소 10명의 참가자가 필요합니다. (현재: ${selectedPlayers.length}명)`);
+      if (allTeamPlayers.length < 10) {
+        alert(`팀을 섞기 위해 최소 10명이 필요합니다. (현재: ${allTeamPlayers.length}명)`);
         return;
       }
 
       // Shuffle players randomly
-      const shuffled = [...selectedPlayers].sort(() => Math.random() - 0.5);
+      const shuffled = [...allTeamPlayers].sort(() => Math.random() - 0.5);
 
       // Assign to teams
-      const teamAInputs = document.querySelectorAll('#teamA .player-input');
-      const teamBInputs = document.querySelectorAll('#teamB .player-input');
-
       for (let i = 0; i < 5; i++) {
-        teamAInputs[i].value = shuffled[i].nickname;
-        teamBInputs[i].value = shuffled[i + 5].nickname;
+        teamAInputs[i].value = shuffled[i];
+        teamBInputs[i].value = shuffled[i + 5];
       }
     }
 
