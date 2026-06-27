@@ -31,6 +31,8 @@ p.subtitle {
 .container {
   text-align: center;
   margin-top: 120px;
+  position: relative;
+  min-height: 100vh;
 }
 
 /* Menu */
@@ -63,6 +65,29 @@ p.subtitle {
   color: #666;
   border-color: #444;
   cursor: not-allowed;
+}
+
+/* GitHub Link */
+.github-link {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 12px 20px;
+  background-color: #1a1a1a;
+  color: gold;
+  border: 2px solid gold;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: 0.3s;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.github-link:hover {
+  background-color: gold;
+  color: black;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  transform: scale(1.05);
 }
 
 /* Tables */

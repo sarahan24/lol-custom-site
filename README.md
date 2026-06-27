@@ -7,7 +7,7 @@
 - [기술 스택](#기술-스택)
 - [설치 및 실행](#설치-및-실행)
 - [사용법](#사용법)
-- [API 문서](#api-문서)
+- [API 문서](docs/API.md)
 - [파일 구조](#파일-구조)
 - [데이터 구조](#데이터-구조)
 
@@ -52,23 +52,19 @@
 
 ### 1단계: 저장소 클론 또는 다운로드
 ```bash
+git clone https://github.com/sarahan24/lol-custom-site.git
 cd /home/ktw/projects/lol-custom-site
 ```
 
 ### 2단계: 가상 환경 생성 (선택사항이지만 권장)
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
+uv sync
+source .venv/bin/activate # Linux/Mac
 # 또는
-venv\Scripts\activate  # Windows
+.venv\Scripts\activate  # Windows
 ```
 
-### 3단계: 의존성 설치
-```bash
-pip install flask
-```
-
-### 4단계: 애플리케이션 실행
+### 3단계: 애플리케이션 실행
 ```bash
 python3 main.py
 ```
@@ -115,117 +111,7 @@ http://127.0.0.1:5000
 2. 모든 참가자가 MT 포인트 기준 내림차순으로 표시
 3. 순위(1, 2, 3...), 닉네임, 티어, MT 포인트 확인 가능
 
-## 🔌 API 문서
-
-모든 API는 `/api/players` 엔드포인트를 기반으로 합니다.
-
-### GET /api/players
-모든 참가자 목록 조회
-
-**요청:**
-```http
-GET /api/players
-```
-
-**응답 (200 OK):**
-```json
-[
-  {
-    "nickname": "신튜렁",
-    "tier": "S",
-    "mt": 1520
-  },
-  {
-    "nickname": "미드괴물",
-    "tier": "S",
-    "mt": 1490
-  }
-]
-```
-
-### POST /api/players
-새로운 참가자 추가
-
-**요청:**
-```http
-POST /api/players
-Content-Type: application/json
-
-{
-  "nickname": "새로운참가자",
-  "tier": "A",
-  "mt": 1400
-}
-```
-
-**응답 (201 Created):**
-```json
-{
-  "nickname": "새로운참가자",
-  "tier": "A",
-  "mt": 1400
-}
-```
-
-**에러 응답 (400 Bad Request):**
-```json
-{
-  "error": "nickname is required"
-}
-```
-
-### PUT /api/players/<index>
-특정 참가자 정보 수정
-
-**요청:**
-```http
-PUT /api/players/0
-Content-Type: application/json
-
-{
-  "nickname": "수정된닉네임",
-  "tier": "S",
-  "mt": 1550
-}
-```
-
-**응답 (200 OK):**
-```json
-{
-  "nickname": "수정된닉네임",
-  "tier": "S",
-  "mt": 1550
-}
-```
-
-**에러 응답 (404 Not Found):**
-```json
-{
-  "error": "Player not found"
-}
-```
-
-### DELETE /api/players/<index>
-특정 참가자 삭제
-
-**요청:**
-```http
-DELETE /api/players/0
-```
-
-**응답 (204 No Content):**
-```
-(본문 없음)
-```
-
-**에러 응답 (404 Not Found):**
-```json
-{
-  "error": "Player not found"
-}
-```
-
-## 📁 파일 구조
+##  파일 구조
 
 ```
 lol-custom-site/
@@ -316,7 +202,3 @@ python3 main.py --port 5001
 - Python 3.8+
 - Flask 2.0+
 - 최신 웹 브라우저 (Chrome, Firefox, Safari, Edge)
-
----
-
-**마지막 업데이트**: 2026년 6월 26일
