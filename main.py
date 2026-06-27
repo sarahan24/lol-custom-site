@@ -63,6 +63,11 @@ def team():
     return render_template('team.html')
 
 
+@app.route('/vs')
+def vs():
+    return render_template('vs.html')
+
+
 @app.route('/api/players', methods=['GET'])
 def api_get_players():
     """Get all players"""

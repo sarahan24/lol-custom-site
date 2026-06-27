@@ -489,3 +489,144 @@ th {
   background-color: gold;
   color: black;
 }
+
+/* VS Matches Styles */
+.vs-matches-container {
+  margin: 30px auto;
+  max-width: 900px;
+}
+
+.vs-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-shuffle,
+.btn-clear {
+  padding: 12px 25px;
+  background-color: gold;
+  color: black;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-shuffle:hover,
+.btn-clear:hover {
+  background-color: #ffd700;
+  transform: scale(1.05);
+}
+
+.btn-clear {
+  background-color: #ff6b6b;
+  color: white;
+}
+
+.btn-clear:hover {
+  background-color: #ff5252;
+}
+
+.vs-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.vs-match {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #1a1a1a;
+  border: 2px solid gold;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+.vs-player {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.vs-input {
+  width: 100%;
+  padding: 10px;
+  background-color: #222;
+  color: white;
+  border: 1px solid gold;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.vs-input::placeholder {
+  color: #666;
+}
+
+.vs-input:focus {
+  outline: none;
+  border-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.vs-divider {
+  color: gold;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 0 15px;
+  white-space: nowrap;
+}
+
+.vs-result {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.vs-btn-win {
+  padding: 8px 12px;
+  background-color: gold;
+  color: black;
+  border: none;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.vs-btn-win:hover {
+  background-color: #ffd700;
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .vs-match {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .vs-divider {
+    padding: 5px 0;
+  }
+
+  .vs-result {
+    width: 100%;
+  }
+
+  .vs-btn-win {
+    flex: 1;
+    min-width: 100px;
+  }
+}
