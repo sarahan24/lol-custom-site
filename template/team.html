@@ -99,6 +99,7 @@
         const response = await fetch('/api/players');
         allPlayers = await response.json();
         displayPlayersList();
+        setupTeamInputListeners();
       } catch (error) {
         console.error('Failed to load players:', error);
       }
@@ -112,10 +113,81 @@
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
         playerItem.innerHTML = `
-          <input type="checkbox" id="player-${index}" class="player-checkbox" data-index="${index}" checked>
+          <input type="checkbox" id="player-${index}" class="player-checkbox" data-index="${index}" data-nickname="${player.nickname}" checked>
           <label for="player-${index}" class="player-label">${player.nickname}</label>
         `;
         playersList.appendChild(playerItem);
+        
+        // Add change event listener to checkbox
+        const checkbox = playerItem.querySelector('.player-checkbox');
+        checkbox.addEventListener('change', () => onPlayerCheckboxChange(checkbox));
+      });
+    }
+
+    function setupTeamInputListeners() {
+      const allTeamInputs = document.querySelectorAll('.player-input');
+      allTeamInputs.forEach(input => {
+        input.addEventListener('change', () => updateCheckboxStates());
+        input.addEventListener('input', () => updateCheckboxStates());
+      });
+    }
+
+    function onPlayerCheckboxChange(checkbox) {
+      const nickname = checkbox.getAttribute('data-nickname');
+      
+      if (checkbox.checked) {
+        // Add to the first empty slot in teams
+        const teamAInputs = document.querySelectorAll('#teamA .player-input');
+        const teamBInputs = document.querySelectorAll('#teamB .player-input');
+        
+        // Find first empty slot
+        for (let i = 0; i < 5; i++) {
+          if (!teamAInputs[i].value.trim()) {
+            teamAInputs[i].value = nickname;
+            updateCheckboxStates();
+            return;
+          }
+        }
+        
+        for (let i = 0; i < 5; i++) {
+          if (!teamBInputs[i].value.trim()) {
+            teamBInputs[i].value = nickname;
+            updateCheckboxStates();
+            return;
+          }
+        }
+        
+        alert('팀에 빈 자리가 없습니다.');
+        checkbox.checked = false;
+      } else {
+        // Remove from teams
+        const allTeamInputs = document.querySelectorAll('.player-input');
+        allTeamInputs.forEach(input => {
+          if (input.value.trim() === nickname) {
+            input.value = '';
+          }
+        });
+        updateCheckboxStates();
+      }
+    }
+
+    function updateCheckboxStates() {
+      const allTeamInputs = document.querySelectorAll('.player-input');
+      const teamNicknames = Array.from(allTeamInputs).map(input => input.value.trim()).filter(nick => nick);
+      
+      const checkboxes = document.querySelectorAll('.player-checkbox');
+      checkboxes.forEach(checkbox => {
+        const nickname = checkbox.getAttribute('data-nickname');
+        const isInTeam = teamNicknames.includes(nickname);
+        
+        // Check if player exists in database
+        const playerExists = allPlayers.some(p => p.nickname === nickname);
+        
+        if (isInTeam && playerExists) {
+          checkbox.checked = true;
+        } else if (!isInTeam) {
+          checkbox.checked = false;
+        }
       });
     }
 
@@ -142,6 +214,9 @@
         teamAInputs[i].value = shuffled[i];
         teamBInputs[i].value = shuffled[i + 5];
       }
+      
+      // Update checkbox states after shuffling
+      updateCheckboxStates();
     }
 
     function updateMT(team) {
