@@ -122,10 +122,12 @@ lol-custom-site/
 ├── static/
 │   ├── style.css          # 스타일시트
 │   └── script.js          # 클라이언트 사이드 JavaScript
-└── template/
-    ├── index.html         # 메인 페이지 (홈)
-    ├── manage.html        # 참가자 관리 페이지
-    └── ranking.html       # MT 랭킹 페이지
+├── template/
+│   ├── index.html         # 메인 페이지 (홈)
+│   ├── manage.html        # 참가자 관리 페이지
+│   └── ranking.html       # MT 랭킹 페이지
+└── docs/
+    └── API.md             # API 문서
 ```
 
 ## 🗂️ 데이터 구조
@@ -186,10 +188,9 @@ python3 main.py --port 5001
 
 ## 🔄 향후 개선 예정 사항
 
-- 팀 자동 배치 기능
+- 팀 배치 기능
 - 규정집 페이지
 - 대전 기록 추적
-- 사용자 인증 (로그인)
 - 데이터베이스 연동 (SQLite/PostgreSQL)
 - 다국어 지원
 
