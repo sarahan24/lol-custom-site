@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>팀 배치 - 롤 내전 관리 사이트</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <div class="container">
+    <h1>⚔️ 팀 배치</h1>
+
+    <!-- Player Selection Section -->
+    <div class="player-selection">
+      <h3>참가자 선택</h3>
+      <div class="players-list" id="playersList">
+        <!-- Players will be dynamically loaded here -->
+      </div>
+    </div>
+
+    <div class="team-setup">
+      <!-- Team A -->
+      <div class="team-section">
+        <h2>A팀</h2>
+        <div class="team-players" id="teamA">
+          <div class="player-slot">
+            <input type="text" placeholder="닉네임 입력" class="player-input" maxlength="20">
+          </div>
+        </div>
+      </div>
+
+      <!-- Team B -->
+      <div class="team-section">
+        <h2>B팀</h2>
+        <div class="team-players" id="teamB">
+          <div class="player-slot">
+            <input type="text" placeholder="닉네임 입력" class="player-input" maxlength="20">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="team-controls">
+      <button class="btn-shuffle" onclick="shuffleTeams()">🔀 랜덤으로 섞기</button>
+    </div>
+
+    <div class="match-result">
+      <h3>경기 결과</h3>
+      <div class="result-section">
+        <div class="result-input">
+          <label for="mtChangeA">A팀 MT 변동:</label>
+          <input type="number" id="mtChangeA" placeholder="0" value="0">
+          <button onclick="updateMT('A')">적용</button>
+        </div>
+        <div class="result-input">
+          <label for="mtChangeB">B팀 MT 변동:</label>
+          <input type="number" id="mtChangeB" placeholder="0" value="0">
+          <button onclick="updateMT('B')">적용</button>
+        </div>
+      </div>
+    </div>
+
+    <a href="/" class="back-button">← 돌아가기</a>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script>
+    let allPlayers = [];
+
+    // Load all players when page loads
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const response = await fetch('/api/players');
+        allPlayers = await response.json();
+        displayPlayersList();
+        setupTeamInputListeners();
+      } catch (error) {
+        console.error('Failed to load players:', error);
+      }
+    });
+
+    function displayPlayersList() {
+      const playersList = document.getElementById('playersList');
+      playersList.innerHTML = '';
+
+      allPlayers.forEach((player, index) => {
+        const playerItem = document.createElement('div');
+        playerItem.className = 'player-item';
+        playerItem.innerHTML = `
+          <input type="checkbox" id="player-${index}" class="player-checkbox" data-index="${index}" data-nickname="${player.nickname}">
+          <label for="player-${index}" class="player-label">${player.nickname}</label>
+        `;
+        playersList.appendChild(playerItem);
+        
+        // Add change event listener to checkbox
+        const checkbox = playerItem.querySelector('.player-checkbox');
+        checkbox.addEventListener('change', () => onPlayerCheckboxChange(checkbox));
+      });
+    }
+
+    function setupTeamInputListeners() {
+      const allTeamInputs = document.querySelectorAll('.player-input');
+      allTeamInputs.forEach(input => {
+        input.addEventListener('change', () => updateCheckboxStates());
+        input.addEventListener('input', () => updateCheckboxStates());
+      });
+    }
+
+    function onPlayerCheckboxChange(checkbox) {
+      const nickname = checkbox.getAttribute('data-nickname');
+      
+      if (checkbox.checked) {
+        // Add to the first empty slot in teams
+        const teamAInputs = document.querySelectorAll('#teamA .player-input');
+        const teamBInputs = document.querySelectorAll('#teamB .player-input');
+        
+        // Find first empty slot
+        if (!teamAInputs[0].value.trim()) {
+          teamAInputs[0].value = nickname;
+          updateCheckboxStates();
+          return;
+        }
+        
+        if (!teamBInputs[0].value.trim()) {
+          teamBInputs[0].value = nickname;
+          updateCheckboxStates();
+          return;
+        }
+        
+        alert('빈 자리가 없습니다.');
+        checkbox.checked = false;
+      } else {
+        // Remove from teams
+        const allTeamInputs = document.querySelectorAll('.player-input');
+        allTeamInputs.forEach(input => {
+          if (input.value.trim() === nickname) {
+            input.value = '';
+          }
+        });
+        updateCheckboxStates();
+      }
+    }
+
+    function updateCheckboxStates() {
+      const allTeamInputs = document.querySelectorAll('.player-input');
+      const teamNicknames = Array.from(allTeamInputs).map(input => input.value.trim()).filter(nick => nick);
+      
+      const checkboxes = document.querySelectorAll('.player-checkbox');
+      checkboxes.forEach(checkbox => {
+        const nickname = checkbox.getAttribute('data-nickname');
+        const isInTeam = teamNicknames.includes(nickname);
+        
+        // Check if player exists in database
+        const playerExists = allPlayers.some(p => p.nickname === nickname);
+        
+        if (isInTeam && playerExists) {
+          checkbox.checked = true;
+        } else if (!isInTeam) {
+          checkbox.checked = false;
+        }
+      });
+    }
+
+    function shuffleTeams() {
+      // Get all players currently in both teams
+      const teamAInputs = document.querySelectorAll('#teamA .player-input');
+      const teamBInputs = document.querySelectorAll('#teamB .player-input');
+      
+      const teamAPlayers = Array.from(teamAInputs).map(input => input.value.trim()).filter(nick => nick);
+      const teamBPlayers = Array.from(teamBInputs).map(input => input.value.trim()).filter(nick => nick);
+      
+      const allTeamPlayers = [...teamAPlayers, ...teamBPlayers];
+
+      if (allTeamPlayers.length != 2) {
+        alert(`팀을 섞기 위해 2명이 필요합니다. (현재: ${allTeamPlayers.length}명)`);
+        return;
+      }
+
+      // Shuffle players randomly
+      const shuffled = [...allTeamPlayers].sort(() => Math.random() - 0.5);
+
+      // Assign to teams
+      teamAInputs[0].value = shuffled[0];
+      teamBInputs[0].value = shuffled[1];
+      
+      // Update checkbox states after shuffling
+      updateCheckboxStates();
+    }
+
+    function updateMT(team) {
+      const mtChangeInput = team === 'A' ? document.getElementById('mtChangeA') : document.getElementById('mtChangeB');
+      const mtChange = parseInt(mtChangeInput.value) || 0;
+
+      if (mtChange === 0) {
+        alert('변동값을 입력해주세요.');
+        return;
+      }
+
+      const playerInputs = team === 'A' ? document.querySelectorAll('#teamA .player-input') : document.querySelectorAll('#teamB .player-input');
+      const nicknames = Array.from(playerInputs).map(input => input.value.trim()).filter(nick => nick);
+
+      if (nicknames.length === 0) {
+        alert('팀원을 선택해주세요.');
+        return;
+      }
+
+      // Update MT for all players in the team
+      Promise.all(nicknames.map(nickname => updatePlayerMT(nickname, mtChange)))
+        .then(() => {
+          alert(`${team}팀 MT가 ${mtChange > 0 ? '+' : ''}${mtChange}로 업데이트되었습니다.`);
+          mtChangeInput.value = '0';
+        })
+        .catch(error => {
+          console.error('Failed to update MT:', error);
+          alert('MT 업데이트 중 오류가 발생했습니다.');
+        });
+    }
+
+    async function updatePlayerMT(nickname, mtChange) {
+      try {
+        const players = await fetch('/api/players').then(r => r.json());
+        let playerIndex = players.findIndex(p => p.nickname === nickname);
+
+        // If player not found, create a new one with MT 0
+        if (playerIndex === -1) {
+          const createResponse = await fetch('/api/players', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              nickname: nickname,
+              tier: '신튜렁',
+              mt: mtChange
+            })
+          });
+
+          if (!createResponse.ok) {
+            throw new Error(`Failed to create player: ${createResponse.statusText}`);
+          }
+          console.log(`Created new player: ${nickname} with MT: ${mtChange}`);
+          return;
+        }
+
+        // Update existing player
+        const response = await fetch(`/api/players/${playerIndex}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nickname: players[playerIndex].nickname,
+            tier: players[playerIndex].tier,
+            mt: players[playerIndex].mt + mtChange
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update player: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error(`Error updating player ${nickname}:`, error);
+        throw error;
+      }
+    }
+  </script>
+</body>
+
+</html>

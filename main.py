@@ -1,10 +1,12 @@
-from flask import Flask, render_template, jsonify, request, abort
+from flask import Flask, render_template, jsonify, request, abort, redirect, url_for, session
+from functools import wraps
 import json
 import os
 import threading
 import logging
 
 app = Flask(__name__, template_folder='template')
+app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -12,7 +14,49 @@ logger = logging.getLogger(__name__)
 
 # data file used to persist participants
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data.json')
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.json')
 DATA_LOCK = threading.Lock()
+
+
+def load_config():
+    try:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.error(f'Config file not found: {CONFIG_FILE}')
+        return {}
+    except json.JSONDecodeError:
+        logger.error(f'Invalid JSON in {CONFIG_FILE}')
+        return {}
+    except Exception as e:
+        logger.error(f'Error loading config: {e}')
+        return {}
+
+CONFIG = load_config()
+PASSWORD = CONFIG.get('password')
+
+
+def is_authenticated():
+    return session.get('authenticated') is True
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not is_authenticated():
+            return redirect(url_for('login', next=request.path))
+        return view(*args, **kwargs)
+    return wrapped
+
+
+def login_required_api(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not is_authenticated():
+            return jsonify({'error': 'Unauthorized'}), 401
+        return view(*args, **kwargs)
+    return wrapped
+
 
 
 def load_players():
@@ -45,10 +89,33 @@ def save_players(players):
 
 @app.route("/")
 def main():
+    # if not is_authenticated():
+    #     return redirect(url_for('login', next=request.path))
     return render_template("index.html")
 
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        password = data.get('password', '')
+        if PASSWORD and password == PASSWORD:
+            session['authenticated'] = True
+            return jsonify({'success': True})
+        return jsonify({'error': '잘못된 비밀번호입니다.'}), 401
+
+    next_page = request.args.get('next', '/')
+    return render_template('login.html', next_page=next_page)
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+
 @app.route('/manage')
+@login_required
 def manage():
     return render_template('manage.html')
 
@@ -58,6 +125,18 @@ def ranking():
     return render_template('ranking.html')
 
 
+@app.route('/team')
+@login_required
+def team():
+    return render_template('team.html')
+
+
+@app.route('/vs')
+@login_required
+def vs():
+    return render_template('vs.html')
+
+
 @app.route('/api/players', methods=['GET'])
 def api_get_players():
     """Get all players"""
@@ -65,6 +144,7 @@ def api_get_players():
 
 
 @app.route('/api/players', methods=['POST'])
+@login_required_api
 def api_add_player():
     """Add a new player"""
     data = request.get_json() or {}
@@ -84,6 +164,11 @@ def api_add_player():
     
     try:
         players = load_players()
+        
+        # Check if nickname already exists
+        if any(player['nickname'] == nickname for player in players):
+            return jsonify({'error': 'nickname already exists'}), 400
+        
         players.append({'nickname': nickname, 'tier': tier or '신튜렁', 'mt': mt})
         save_players(players)
         logger.info(f"Added player: {nickname}")
@@ -94,6 +179,7 @@ def api_add_player():
 
 
 @app.route('/api/players/<int:index>', methods=['PUT'])
+@login_required_api
 def api_update_player(index):
     """Update a player by index"""
     try:
@@ -121,6 +207,7 @@ def api_update_player(index):
 
 
 @app.route('/api/players/<int:index>', methods=['DELETE'])
+@login_required_api
 def api_delete_player(index):
     """Delete a player by index"""
     try:
