@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 - 롤 내전 관리 사이트</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <div class="container">
+    <h1>🔐 관리자 로그인</h1>
+    <p class="subtitle">MT 랭킹을 제외한 페이지에 접근하려면 비밀번호를 입력하세요.</p>
+
+    <div class="login-form">
+      <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password">
+      <button class="primary" id="loginButton">로그인</button>
+      <p id="loginError" class="error-message"></p>
+    </div>
+
+    <a href="/" class="back-button">← 메인으로 이동</a>
+  </div>
+
+  <script>
+    const nextPage = '{{ next_page }}' || '/';
+    document.getElementById('loginButton').addEventListener('click', async () => {
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('loginError');
+      errorEl.textContent = '';
+
+      if (!password.trim()) {
+        errorEl.textContent = '비밀번호를 입력해주세요.';
+        return;
+      }
+
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          errorEl.textContent = data.error || '로그인에 실패했습니다.';
+          return;
+        }
+
+        window.location.href = nextPage;
+      } catch (err) {
+        errorEl.textContent = '서버와 통신 중 오류가 발생했습니다.';
+        console.error(err);
+      }
+    });
+
+    document.getElementById('password').addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        document.getElementById('loginButton').click();
+      }
+    });
+  </script>
+</body>
+
+</html>

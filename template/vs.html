@@ -4,13 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>1대1 매칭 - 롤 내전 관리 사이트</title>
+  <title>팀 배치 - 롤 내전 관리 사이트</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
   <div class="container">
-    <h1>⚔️ 1대1 매칭</h1>
+    <h1>⚔️ 팀 배치</h1>
 
     <!-- Player Selection Section -->
     <div class="player-selection">
@@ -20,15 +20,45 @@
       </div>
     </div>
 
-    <!-- VS Matches Section -->
-    <div class="vs-matches-container">
-      <div class="vs-controls">
-        <button class="btn-shuffle" onclick="generateRandomMatches()">🔀 랜덤 매칭</button>
-        <button class="btn-clear" onclick="clearAllMatches()">🗑️ 초기화</button>
+    <div class="team-setup">
+      <!-- Team A -->
+      <div class="team-section">
+        <h2>A팀</h2>
+        <div class="team-players" id="teamA">
+          <div class="player-slot">
+            <input type="text" placeholder="닉네임 입력" class="player-input" maxlength="20">
+          </div>
+        </div>
       </div>
 
-      <div class="vs-matches" id="vsMatches">
-        <!-- Matches will be dynamically generated here -->
+      <!-- Team B -->
+      <div class="team-section">
+        <h2>B팀</h2>
+        <div class="team-players" id="teamB">
+          <div class="player-slot">
+            <input type="text" placeholder="닉네임 입력" class="player-input" maxlength="20">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="team-controls">
+      <button class="btn-shuffle" onclick="shuffleTeams()">🔀 랜덤으로 섞기</button>
+    </div>
+
+    <div class="match-result">
+      <h3>경기 결과</h3>
+      <div class="result-section">
+        <div class="result-input">
+          <label for="mtChangeA">A팀 MT 변동:</label>
+          <input type="number" id="mtChangeA" placeholder="0" value="0">
+          <button onclick="updateMT('A')">적용</button>
+        </div>
+        <div class="result-input">
+          <label for="mtChangeB">B팀 MT 변동:</label>
+          <input type="number" id="mtChangeB" placeholder="0" value="0">
+          <button onclick="updateMT('B')">적용</button>
+        </div>
       </div>
     </div>
 
@@ -38,7 +68,6 @@
   <script src="{{ url_for('static', filename='script.js') }}"></script>
   <script>
     let allPlayers = [];
-    const MAX_MATCHES = 10;
 
     // Load all players when page loads
     document.addEventListener('DOMContentLoaded', async () => {
@@ -46,7 +75,7 @@
         const response = await fetch('/api/players');
         allPlayers = await response.json();
         displayPlayersList();
-        generateMatchSlots();
+        setupTeamInputListeners();
       } catch (error) {
         console.error('Failed to load players:', error);
       }
@@ -60,107 +89,133 @@
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
         playerItem.innerHTML = `
-          <input type="checkbox" id="player-${index}" class="player-checkbox" data-index="${index}" data-nickname="${player.nickname}" checked>
+          <input type="checkbox" id="player-${index}" class="player-checkbox" data-index="${index}" data-nickname="${player.nickname}">
           <label for="player-${index}" class="player-label">${player.nickname}</label>
         `;
         playersList.appendChild(playerItem);
+        
+        // Add change event listener to checkbox
+        const checkbox = playerItem.querySelector('.player-checkbox');
+        checkbox.addEventListener('change', () => onPlayerCheckboxChange(checkbox));
       });
     }
 
-    function generateMatchSlots() {
-      const vsMatches = document.getElementById('vsMatches');
-      vsMatches.innerHTML = '';
-
-      for (let i = 0; i < MAX_MATCHES; i++) {
-        const matchDiv = document.createElement('div');
-        matchDiv.className = 'vs-match';
-        matchDiv.innerHTML = `
-          <div class="vs-player vs-player-1">
-            <input type="text" placeholder="선수 1" class="vs-input vs-input-1" maxlength="20">
-          </div>
-          <div class="vs-divider">VS</div>
-          <div class="vs-player vs-player-2">
-            <input type="text" placeholder="선수 2" class="vs-input vs-input-2" maxlength="20">
-          </div>
-          <div class="vs-result">
-            <button class="vs-btn-win" onclick="updateVSResult(${i}, 1)">선수 1 승리</button>
-            <button class="vs-btn-win" onclick="updateVSResult(${i}, 2)">선수 2 승리</button>
-          </div>
-        `;
-        vsMatches.appendChild(matchDiv);
-      }
+    function setupTeamInputListeners() {
+      const allTeamInputs = document.querySelectorAll('.player-input');
+      allTeamInputs.forEach(input => {
+        input.addEventListener('change', () => updateCheckboxStates());
+        input.addEventListener('input', () => updateCheckboxStates());
+      });
     }
 
-    function generateRandomMatches() {
-      const checkboxes = document.querySelectorAll('.player-checkbox:checked');
-      const selectedNicknames = Array.from(checkboxes).map(checkbox => 
-        checkbox.getAttribute('data-nickname')
-      );
-
-      if (selectedNicknames.length < 2) {
-        alert('최소 2명 이상의 참가자를 선택해주세요.');
-        return;
-      }
-
-      // Shuffle players
-      const shuffled = [...selectedNicknames].sort(() => Math.random() - 0.5);
-
-      // Generate matches
-      const vsMatches = document.getElementById('vsMatches');
-      const matchDivs = vsMatches.querySelectorAll('.vs-match');
-
-      let matchIndex = 0;
-      for (let i = 0; i < shuffled.length - 1; i += 2) {
-        if (matchIndex < MAX_MATCHES) {
-          const inputs = matchDivs[matchIndex].querySelectorAll('.vs-input');
-          inputs[0].value = shuffled[i];
-          inputs[1].value = shuffled[i + 1];
-          matchIndex++;
+    function onPlayerCheckboxChange(checkbox) {
+      const nickname = checkbox.getAttribute('data-nickname');
+      
+      if (checkbox.checked) {
+        // Add to the first empty slot in teams
+        const teamAInputs = document.querySelectorAll('#teamA .player-input');
+        const teamBInputs = document.querySelectorAll('#teamB .player-input');
+        
+        // Find first empty slot
+        if (!teamAInputs[0].value.trim()) {
+          teamAInputs[0].value = nickname;
+          updateCheckboxStates();
+          return;
         }
-      }
-
-      // Clear remaining matches
-      for (let i = matchIndex; i < MAX_MATCHES; i++) {
-        const inputs = matchDivs[i].querySelectorAll('.vs-input');
-        inputs[0].value = '';
-        inputs[1].value = '';
+        
+        if (!teamBInputs[0].value.trim()) {
+          teamBInputs[0].value = nickname;
+          updateCheckboxStates();
+          return;
+        }
+        
+        alert('빈 자리가 없습니다.');
+        checkbox.checked = false;
+      } else {
+        // Remove from teams
+        const allTeamInputs = document.querySelectorAll('.player-input');
+        allTeamInputs.forEach(input => {
+          if (input.value.trim() === nickname) {
+            input.value = '';
+          }
+        });
+        updateCheckboxStates();
       }
     }
 
-    function clearAllMatches() {
-      const vsMatches = document.getElementById('vsMatches');
-      const inputs = vsMatches.querySelectorAll('.vs-input');
-      inputs.forEach(input => input.value = '');
+    function updateCheckboxStates() {
+      const allTeamInputs = document.querySelectorAll('.player-input');
+      const teamNicknames = Array.from(allTeamInputs).map(input => input.value.trim()).filter(nick => nick);
+      
+      const checkboxes = document.querySelectorAll('.player-checkbox');
+      checkboxes.forEach(checkbox => {
+        const nickname = checkbox.getAttribute('data-nickname');
+        const isInTeam = teamNicknames.includes(nickname);
+        
+        // Check if player exists in database
+        const playerExists = allPlayers.some(p => p.nickname === nickname);
+        
+        if (isInTeam && playerExists) {
+          checkbox.checked = true;
+        } else if (!isInTeam) {
+          checkbox.checked = false;
+        }
+      });
     }
 
-    async function updateVSResult(matchIndex, winner) {
-      const vsMatches = document.getElementById('vsMatches');
-      const matchDivs = vsMatches.querySelectorAll('.vs-match');
-      const inputs = matchDivs[matchIndex].querySelectorAll('.vs-input');
+    function shuffleTeams() {
+      // Get all players currently in both teams
+      const teamAInputs = document.querySelectorAll('#teamA .player-input');
+      const teamBInputs = document.querySelectorAll('#teamB .player-input');
+      
+      const teamAPlayers = Array.from(teamAInputs).map(input => input.value.trim()).filter(nick => nick);
+      const teamBPlayers = Array.from(teamBInputs).map(input => input.value.trim()).filter(nick => nick);
+      
+      const allTeamPlayers = [...teamAPlayers, ...teamBPlayers];
 
-      const player1 = inputs[0].value.trim();
-      const player2 = inputs[1].value.trim();
-
-      if (!player1 || !player2) {
-        alert('양쪽 선수가 모두 입력되어야 합니다.');
+      if (allTeamPlayers.length != 2) {
+        alert(`팀을 섞기 위해 2명이 필요합니다. (현재: ${allTeamPlayers.length}명)`);
         return;
       }
 
-      // Determine winner and loser
-      const winnerNickname = winner === 1 ? player1 : player2;
-      const loserNickname = winner === 1 ? player2 : player1;
+      // Shuffle players randomly
+      const shuffled = [...allTeamPlayers].sort(() => Math.random() - 0.5);
 
-      try {
-        // Update winner MT (+5)
-        await updatePlayerMT(winnerNickname, 5);
-        // Update loser MT (-5)
-        await updatePlayerMT(loserNickname, -5);
+      // Assign to teams
+      teamAInputs[0].value = shuffled[0];
+      teamBInputs[0].value = shuffled[1];
+      
+      // Update checkbox states after shuffling
+      updateCheckboxStates();
+    }
 
-        alert(`${winnerNickname}가 승리했습니다!\n+5 / -5 적용되었습니다.`);
-      } catch (error) {
-        console.error('Failed to update result:', error);
-        alert('경기 결과 업데이트 중 오류가 발생했습니다.');
+    function updateMT(team) {
+      const mtChangeInput = team === 'A' ? document.getElementById('mtChangeA') : document.getElementById('mtChangeB');
+      const mtChange = parseInt(mtChangeInput.value) || 0;
+
+      if (mtChange === 0) {
+        alert('변동값을 입력해주세요.');
+        return;
       }
+
+      const playerInputs = team === 'A' ? document.querySelectorAll('#teamA .player-input') : document.querySelectorAll('#teamB .player-input');
+      const nicknames = Array.from(playerInputs).map(input => input.value.trim()).filter(nick => nick);
+
+      if (nicknames.length === 0) {
+        alert('팀원을 선택해주세요.');
+        return;
+      }
+
+      // Update MT for all players in the team
+      Promise.all(nicknames.map(nickname => updatePlayerMT(nickname, mtChange)))
+        .then(() => {
+          alert(`${team}팀 MT가 ${mtChange > 0 ? '+' : ''}${mtChange}로 업데이트되었습니다.`);
+          mtChangeInput.value = '0';
+        })
+        .catch(error => {
+          console.error('Failed to update MT:', error);
+          alert('MT 업데이트 중 오류가 발생했습니다.');
+        });
     }
 
     async function updatePlayerMT(nickname, mtChange) {

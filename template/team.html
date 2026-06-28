@@ -113,7 +113,7 @@
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
         playerItem.innerHTML = `
-          <input type="checkbox" id="player-${index}" class="player-checkbox" data-index="${index}" data-nickname="${player.nickname}" checked>
+          <input type="checkbox" id="player-${index}" class="player-checkbox" data-index="${index}" data-nickname="${player.nickname}">
           <label for="player-${index}" class="player-label">${player.nickname}</label>
         `;
         playersList.appendChild(playerItem);
@@ -201,8 +201,8 @@
       
       const allTeamPlayers = [...teamAPlayers, ...teamBPlayers];
 
-      if (allTeamPlayers.length < 10) {
-        alert(`팀을 섞기 위해 최소 10명이 필요합니다. (현재: ${allTeamPlayers.length}명)`);
+      if (allTeamPlayers.length == 10) {
+        alert(`팀을 섞기 위해 10명이 필요합니다. (현재: ${allTeamPlayers.length}명)`);
         return;
       }
 
